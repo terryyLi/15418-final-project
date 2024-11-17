@@ -1,8 +1,47 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <fstream>
 #include <cassert>
 #include "sparse_matrix.h"
+
+// Load a full matrix from a file and convert it to CSR format
+CSRMatrix loadFullMatrixToCSR(const std::string &filePath) {
+    std::ifstream inFile(filePath);
+    if (!inFile) {
+        throw std::runtime_error("Unable to open file: " + filePath);
+    }
+
+    int rows, cols;
+    inFile >> rows >> cols;
+
+    std::vector<std::vector<double>> fullMatrix(rows, std::vector<double>(cols, 0.0));
+
+    // Read the full matrix
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            inFile >> fullMatrix[i][j];
+        }
+    }
+
+    // Convert to CSR format
+    CSRMatrix csr;
+    csr.rows = rows;
+    csr.cols = cols;
+    csr.row_ptr.push_back(0); // Starting with the first row
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (fullMatrix[i][j] != 0.0) {
+                csr.values.push_back(fullMatrix[i][j]);
+                csr.col_idx.push_back(j);
+            }
+        }
+        csr.row_ptr.push_back(csr.values.size());
+    }
+
+    return csr;
+}
 
 // Helper function to perform sparse row dot product
 double dotProduct(const std::unordered_map<int, double> &rowA, 
