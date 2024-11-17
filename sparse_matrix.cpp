@@ -41,7 +41,7 @@ double dotProduct(const std::unordered_map<int, double> &rowA,
     return result;
 }
 
-// Multiply two CSR matrices
+// Multiply two CSR matrices with OpenMP parallelization
 CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
     assert(A.cols == B.rows && "Matrix dimensions must align for multiplication.");
 
@@ -53,14 +53,20 @@ CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
 
     std::vector<std::unordered_map<int, double>> B_rows(B.cols);
     
+    // Parallel preprocessing of matrix B
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < B.rows; ++i) {
         for (int j = B.row_ptr[i]; j < B.row_ptr[i + 1]; ++j) {
             int col = B.col_idx[j];
             double value = B.values[j];
-            B_rows[col][i] = value;
+            #pragma omp critical
+            {
+                B_rows[col][i] = value;
+            }
         }
     }
 
+    // Sequential part: compute row pointers for B_T
     for (int i = 0; i < B.cols; ++i) {
         B_T.row_ptr[i + 1] = B_T.row_ptr[i] + B_rows[i].size();
         for (const auto &entry : B_rows[i]) {
@@ -69,28 +75,46 @@ CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
         }
     }
 
-    // Multiply A and B_T
+    // Prepare result matrix
     CSRMatrix result;
     result.rows = A.rows;
     result.cols = B_T.rows;
     result.row_ptr.resize(result.rows + 1, 0);
 
+    // Vector of vectors to store temporary results for each row
+    std::vector<std::vector<std::pair<int, double>>> temp_results(A.rows);
+
+    // Parallel multiplication
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < A.rows; ++i) {
         std::unordered_map<int, double> rowA;
+        // Build row A
         for (int j = A.row_ptr[i]; j < A.row_ptr[i + 1]; ++j) {
             rowA[A.col_idx[j]] = A.values[j];
         }
 
+        // Compute products for this row
+        std::vector<std::pair<int, double>> row_results;
         for (int j = 0; j < B_T.rows; ++j) {
             double dot = dotProduct(rowA, B_rows[j]);
             if (dot != 0.0) {
-                result.col_idx.push_back(j);
-                result.values.push_back(dot);
+                row_results.push_back({j, dot});
             }
         }
-
-        result.row_ptr[i + 1] = result.col_idx.size();
+        temp_results[i] = std::move(row_results);
     }
+
+    // Sequential part: combine results
+    int current_pos = 0;
+    for (int i = 0; i < A.rows; ++i) {
+        result.row_ptr[i] = current_pos;
+        for (const auto &entry : temp_results[i]) {
+            result.col_idx.push_back(entry.first);
+            result.values.push_back(entry.second);
+            current_pos++;
+        }
+    }
+    result.row_ptr[A.rows] = current_pos;
 
     return result;
 }
@@ -117,7 +141,7 @@ COOMatrix convertFullMatrixToCOO(const std::vector<std::vector<double>> &fullMat
     return coo;
 }
 
-// Multiply two COO matrices directly (sequential version)
+// Multiply two COO matrices with OpenMP parallelization
 COOMatrix multiplyCOO(const COOMatrix &A, const COOMatrix &B) {
     assert(A.cols == B.rows && "Matrix dimensions must align for multiplication.");
 
@@ -127,42 +151,71 @@ COOMatrix multiplyCOO(const COOMatrix &A, const COOMatrix &B) {
 
     // Create a map for matrix B to easily find elements by row
     std::vector<std::vector<std::pair<int, double>>> B_by_row(B.rows);
-    for (size_t i = 0; i < B.values.size(); ++i) {
-        B_by_row[B.row_idx[i]].push_back({B.col_idx[i], B.values[i]});
-    }
-
-    // For each non-zero element in A
-    for (size_t i = 0; i < A.values.size(); ++i) {
-        int a_row = A.row_idx[i];
-        int a_col = A.col_idx[i];
-        double a_val = A.values[i];
-
-        // Multiply with corresponding elements in B
-        for (const auto &b_entry : B_by_row[a_col]) {
-            int b_col = b_entry.first;
-            double b_val = b_entry.second;
-            double prod = a_val * b_val;
-
-            if (prod != 0.0) {
-                result.row_idx.push_back(a_row);
-                result.col_idx.push_back(b_col);
-                result.values.push_back(prod);
+    
+    // Parallel preprocessing of matrix B
+    #pragma omp parallel
+    {
+        // Create thread-local vectors to avoid synchronization during collection
+        std::vector<std::vector<std::pair<int, double>>> local_B_by_row(B.rows);
+        
+        #pragma omp for schedule(dynamic)
+        for (size_t i = 0; i < B.values.size(); ++i) {
+            local_B_by_row[B.row_idx[i]].push_back({B.col_idx[i], B.values[i]});
+        }
+        
+        // Merge thread-local results into global B_by_row
+        #pragma omp critical
+        {
+            for (int i = 0; i < B.rows; ++i) {
+                B_by_row[i].insert(B_by_row[i].end(), 
+                                 local_B_by_row[i].begin(), 
+                                 local_B_by_row[i].end());
             }
         }
     }
 
-    // Combine duplicate entries
-    std::unordered_map<uint64_t, double> combined;
-    for (size_t i = 0; i < result.values.size(); ++i) {
-        uint64_t key = (static_cast<uint64_t>(result.row_idx[i]) << 32) | result.col_idx[i];
-        combined[key] += result.values[i];
+    // Create thread-local storage for intermediate results
+    std::vector<std::vector<std::tuple<int, int, double>>> thread_results;
+    #pragma omp parallel
+    {
+        std::vector<std::tuple<int, int, double>> local_results;
+        
+        #pragma omp for schedule(dynamic)
+        for (size_t i = 0; i < A.values.size(); ++i) {
+            int a_row = A.row_idx[i];
+            int a_col = A.col_idx[i];
+            double a_val = A.values[i];
+
+            // Multiply with corresponding elements in B
+            for (const auto &b_entry : B_by_row[a_col]) {
+                int b_col = b_entry.first;
+                double b_val = b_entry.second;
+                double prod = a_val * b_val;
+
+                if (prod != 0.0) {
+                    local_results.emplace_back(a_row, b_col, prod);
+                }
+            }
+        }
+
+        // Combine thread-local results
+        #pragma omp critical
+        {
+            thread_results.push_back(std::move(local_results));
+        }
     }
 
-    // Clear and rebuild result
-    result.row_idx.clear();
-    result.col_idx.clear();
-    result.values.clear();
+    // Combine results from all threads using a hash map
+    std::unordered_map<uint64_t, double> combined;
+    for (const auto &thread_result : thread_results) {
+        for (const auto &[row, col, val] : thread_result) {
+            uint64_t key = (static_cast<uint64_t>(row) << 32) | col;
+            #pragma omp atomic
+            combined[key] += val;
+        }
+    }
 
+    // Build final result
     for (const auto &entry : combined) {
         if (entry.second != 0.0) {
             result.row_idx.push_back(entry.first >> 32);
