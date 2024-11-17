@@ -1,4 +1,4 @@
-APP_NAME = sparse_matrix_mult
+APP_NAME = sparse_matrix
 
 OBJS = main.o sparse_matrix.o
 

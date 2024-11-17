@@ -1,62 +1,95 @@
-#include "sparse_matrix.h"
 #include <iostream>
-#include <stdexcept>
+#include <vector>
 #include <unordered_map>
+#include <cassert>
+#include "sparse_matrix.h"
 
-CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
-    if (A.cols != B.rows) {
-        throw std::invalid_argument("Matrix dimensions do not match for multiplication.");
+// Helper function to perform sparse row dot product
+double dotProduct(const std::unordered_map<int, double> &rowA, 
+                  const std::unordered_map<int, double> &rowB) {
+    double result = 0.0;
+    for (const auto &entry : rowA) {
+        int col = entry.first;
+        if (rowB.count(col)) {
+            result += entry.second * rowB.at(col);
+        }
     }
+    return result;
+}
 
-    // Transpose B for column-wise access
-    std::vector<std::vector<int>> BT_col_idx(B.cols);
-    std::vector<std::vector<double>> BT_values(B.cols);
+// Multiply two CSR matrices
+CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
+    assert(A.cols == B.rows && "Matrix dimensions must align for multiplication.");
+
+    // Transpose B to make accessing rows easier
+    CSRMatrix B_T;
+    B_T.rows = B.cols;
+    B_T.cols = B.rows;
+    B_T.row_ptr.resize(B.cols + 1, 0);
+
+    std::vector<std::unordered_map<int, double>> B_rows(B.cols);
+
     for (int i = 0; i < B.rows; ++i) {
         for (int j = B.row_ptr[i]; j < B.row_ptr[i + 1]; ++j) {
             int col = B.col_idx[j];
-            double val = B.values[j];
-            BT_col_idx[col].push_back(i);
-            BT_values[col].push_back(val);
+            double value = B.values[j];
+            B_rows[col][i] = value;
         }
     }
 
-    // Initialize result matrix C
-    CSRMatrix C;
-    C.rows = A.rows;
-    C.cols = B.cols;
-    C.row_ptr.push_back(0);
+    for (int i = 0; i < B.cols; ++i) {
+        B_T.row_ptr[i + 1] = B_T.row_ptr[i] + B_rows[i].size();
+        for (const auto &entry : B_rows[i]) {
+            B_T.col_idx.push_back(entry.first);
+            B_T.values.push_back(entry.second);
+        }
+    }
+
+    // Multiply A and B_T
+    CSRMatrix result;
+    result.rows = A.rows;
+    result.cols = B_T.rows;
+    result.row_ptr.resize(result.rows + 1, 0);
 
     for (int i = 0; i < A.rows; ++i) {
-        std::unordered_map<int, double> row_result; // Temporary storage for the current row
+        std::unordered_map<int, double> rowA;
         for (int j = A.row_ptr[i]; j < A.row_ptr[i + 1]; ++j) {
-            int colA = A.col_idx[j];
-            double valA = A.values[j];
-            for (size_t k = 0; k < BT_col_idx[colA].size(); ++k) {
-                int colB = BT_col_idx[colA][k];
-                double valB = BT_values[colA][k];
-                row_result[colB] += valA * valB;
+            rowA[A.col_idx[j]] = A.values[j];
+        }
+
+        for (int j = 0; j < B_T.rows; ++j) {
+            double dot = dotProduct(rowA, B_rows[j]);
+            if (dot != 0.0) {
+                result.col_idx.push_back(j);
+                result.values.push_back(dot);
             }
         }
 
-        // Store non-zero results into C
-        for (const auto &[col, value] : row_result) {
-            if (value != 0.0) {
-                C.col_idx.push_back(col);
-                C.values.push_back(value);
-            }
-        }
-        C.row_ptr.push_back(C.col_idx.size());
+        result.row_ptr[i + 1] = result.col_idx.size();
     }
 
-    return C;
+    return result;
 }
 
+// Print a CSR matrix
 void printCSR(const CSRMatrix &mat) {
-    std::cout << "Row Ptr: ";
-    for (int x : mat.row_ptr) std::cout << x << " ";
-    std::cout << "\nCol Idx: ";
-    for (int x : mat.col_idx) std::cout << x << " ";
-    std::cout << "\nValues: ";
-    for (double x : mat.values) std::cout << x << " ";
+    std::cout << "CSR Matrix:" << std::endl;
+    std::cout << "Rows: " << mat.rows << ", Cols: " << mat.cols << std::endl;
+    std::cout << "Row pointers: ";
+    for (int val : mat.row_ptr) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Column indices: ";
+    for (int val : mat.col_idx) {
+        std::cout << val << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << "Values: ";
+    for (double val : mat.values) {
+        std::cout << val << " ";
+    }
     std::cout << std::endl;
 }
