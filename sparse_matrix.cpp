@@ -4,7 +4,6 @@
 #include <fstream>
 #include <cassert>
 #include "sparse_matrix.h"
-#include <omp.h>
 
 // Convert a full matrix to CSR format
 CSRMatrix convertFullMatrixToCSR(const std::vector<std::vector<double>> &fullMatrix) {
@@ -25,7 +24,7 @@ CSRMatrix convertFullMatrixToCSR(const std::vector<std::vector<double>> &fullMat
         }
         csr.row_ptr.push_back(csr.values.size());
     }
-
+    
     return csr;
 }
 
@@ -96,6 +95,85 @@ CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
     return result;
 }
 
+// Convert a full matrix to COO format
+COOMatrix convertFullMatrixToCOO(const std::vector<std::vector<double>> &fullMatrix) {
+    int rows = fullMatrix.size();
+    int cols = rows > 0 ? fullMatrix[0].size() : 0;
+
+    COOMatrix coo;
+    coo.rows = rows;
+    coo.cols = cols;
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (fullMatrix[i][j] != 0.0) {
+                coo.row_idx.push_back(i);
+                coo.col_idx.push_back(j);
+                coo.values.push_back(fullMatrix[i][j]);
+            }
+        }
+    }
+
+    return coo;
+}
+
+// Multiply two COO matrices directly (sequential version)
+COOMatrix multiplyCOO(const COOMatrix &A, const COOMatrix &B) {
+    assert(A.cols == B.rows && "Matrix dimensions must align for multiplication.");
+
+    COOMatrix result;
+    result.rows = A.rows;
+    result.cols = B.cols;
+
+    // Create a map for matrix B to easily find elements by row
+    std::vector<std::vector<std::pair<int, double>>> B_by_row(B.rows);
+    for (size_t i = 0; i < B.values.size(); ++i) {
+        B_by_row[B.row_idx[i]].push_back({B.col_idx[i], B.values[i]});
+    }
+
+    // For each non-zero element in A
+    for (size_t i = 0; i < A.values.size(); ++i) {
+        int a_row = A.row_idx[i];
+        int a_col = A.col_idx[i];
+        double a_val = A.values[i];
+
+        // Multiply with corresponding elements in B
+        for (const auto &b_entry : B_by_row[a_col]) {
+            int b_col = b_entry.first;
+            double b_val = b_entry.second;
+            double prod = a_val * b_val;
+
+            if (prod != 0.0) {
+                result.row_idx.push_back(a_row);
+                result.col_idx.push_back(b_col);
+                result.values.push_back(prod);
+            }
+        }
+    }
+
+    // Combine duplicate entries
+    std::unordered_map<uint64_t, double> combined;
+    for (size_t i = 0; i < result.values.size(); ++i) {
+        uint64_t key = (static_cast<uint64_t>(result.row_idx[i]) << 32) | result.col_idx[i];
+        combined[key] += result.values[i];
+    }
+
+    // Clear and rebuild result
+    result.row_idx.clear();
+    result.col_idx.clear();
+    result.values.clear();
+
+    for (const auto &entry : combined) {
+        if (entry.second != 0.0) {
+            result.row_idx.push_back(entry.first >> 32);
+            result.col_idx.push_back(entry.first & 0xFFFFFFFF);
+            result.values.push_back(entry.second);
+        }
+    }
+
+    return result;
+}
+
 // Print a CSR matrix
 void printCSR(const CSRMatrix &mat) {
     std::cout << "CSR Matrix:" << std::endl;
@@ -117,4 +195,15 @@ void printCSR(const CSRMatrix &mat) {
         std::cout << val << " ";
     }
     std::cout << std::endl;
+}
+
+// Print a COO matrix
+void printCOO(const COOMatrix &mat) {
+    std::cout << "COO Matrix:" << std::endl;
+    std::cout << "Dimensions: " << mat.rows << " x " << mat.cols << std::endl;
+    std::cout << "Non-zero elements:" << std::endl;
+    for (size_t i = 0; i < mat.values.size(); ++i) {
+        std::cout << "(" << mat.row_idx[i] << ", " << mat.col_idx[i] << "): " 
+                 << mat.values[i] << std::endl;
+    }
 }

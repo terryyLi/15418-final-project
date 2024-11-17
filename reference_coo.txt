@@ -1,0 +1,6 @@
+Row indices:
+1 1 0 0 0 
+Column indices:
+2 1 1 2 0 
+Values:
+32 21 14 6 5 
