@@ -4,22 +4,17 @@
 #include <vector>
 #include <string>
 
-// CSR Matrix representation
+// Define the CSRMatrix structure
 struct CSRMatrix {
-    std::vector<int> row_ptr;    // Row pointers
-    std::vector<int> col_idx;    // Column indices
-    std::vector<double> values;  // Non-zero values
-    int rows;                    // Number of rows
-    int cols;                    // Number of columns
+    int rows, cols;
+    std::vector<int> row_ptr;
+    std::vector<int> col_idx;
+    std::vector<double> values;
 };
 
-// Multiply two CSR matrices
+// Function prototypes
+CSRMatrix convertFullMatrixToCSR(const std::vector<std::vector<double>> &fullMatrix);
 CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B);
-
-// Print a CSR matrix
 void printCSR(const CSRMatrix &mat);
-
-// Load a full matrix from a file and convert it to CSR format
-CSRMatrix loadFullMatrixToCSR(const std::string &filePath);
 
 #endif // SPARSE_MATRIX_H

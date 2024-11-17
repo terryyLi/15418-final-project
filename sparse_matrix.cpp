@@ -4,27 +4,13 @@
 #include <fstream>
 #include <cassert>
 #include "sparse_matrix.h"
+#include <omp.h>
 
-// Load a full matrix from a file and convert it to CSR format
-CSRMatrix loadFullMatrixToCSR(const std::string &filePath) {
-    std::ifstream inFile(filePath);
-    if (!inFile) {
-        throw std::runtime_error("Unable to open file: " + filePath);
-    }
+// Convert a full matrix to CSR format
+CSRMatrix convertFullMatrixToCSR(const std::vector<std::vector<double>> &fullMatrix) {
+    int rows = fullMatrix.size();
+    int cols = rows > 0 ? fullMatrix[0].size() : 0;
 
-    int rows, cols;
-    inFile >> rows >> cols;
-
-    std::vector<std::vector<double>> fullMatrix(rows, std::vector<double>(cols, 0.0));
-
-    // Read the full matrix
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            inFile >> fullMatrix[i][j];
-        }
-    }
-
-    // Convert to CSR format
     CSRMatrix csr;
     csr.rows = rows;
     csr.cols = cols;
@@ -67,7 +53,7 @@ CSRMatrix multiplyCSR(const CSRMatrix &A, const CSRMatrix &B) {
     B_T.row_ptr.resize(B.cols + 1, 0);
 
     std::vector<std::unordered_map<int, double>> B_rows(B.cols);
-
+    
     for (int i = 0; i < B.rows; ++i) {
         for (int j = B.row_ptr[i]; j < B.row_ptr[i + 1]; ++j) {
             int col = B.col_idx[j];
