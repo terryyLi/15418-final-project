@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Proposal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Parallel Sparse Matrix Multiplication</h1>
+        <p>Team Members: Terry Li (jielinl), Andrew Wang (azwang2)</p>
+    </header>
+    
+    <section id="url">
+        <h2>URL</h2>
+        <p><a href="https://terryyli.github.io/15418-proj-proposal/">https://terryyli.github.io/15418-proj-proposal/</a></p>
+    </section>
+
+    <section id="progress">
+        <a href="progress.html">Progress</a>
+    </section>
+
+    <section id="summary">
+        <h2>Summary</h2>
+        <p>We are going to create optimized implementations of sparse-matrix multiplication on both GPU and multi-core CPU platforms, and perform a detailed analysis of both systems' performance characteristics. Our goal is to leverage parallel computing to significantly accelerate the computation and to understand the different performance trade-offs between these parallel architectures.</p>
+    </section>
+
+    <section id="background">
+        <h2>Background</h2>
+        <p>Our project focuses on implementing an optimized sparse matrix multiplication algorithm that can run efficiently on parallel platforms, specifically GPU and multi-core CPU architectures. Sparse matrix multiplication involves multiplying two matrices that contain predominantly zero elements. Instead of performing operations on every element, we only process the non-zero entries, making it essential to use specialized data formats such as Compressed Sparse Row (CSR) or Compressed Sparse Column (CSC) to store the matrices.</p>
+	<p> Sparse matrix multiplication is especially relevant in applications such as text classification in machine learning, where natural language in text datasets are often represented as sparse matrix embeddings, such as TF-IDF or Bag-of-Words embeddings. As such, our project holds immediate applicability to the domain of applied machine learning, as the efficient implementation of sparse matrix multiplication holds value in accelerating the training process of text models, among other examples.</p>
+        <p>The application will be implemented to effectively utilize parallel computing by splitting the multiplication task across multiple threads or cores. In GPU implementation, we intend to assign different rows or blocks of the matrix to different threads to take advantage of the massive parallelism offered by GPU architectures. On multi-core CPUs, we plan to use multi-threading to achieve similar division of tasks, distributing the workload across multiple cores for effective computation. Below is a high-level pseudocode representation of the approach:</p>
+        <pre>
+        for each non-zero element in Matrix A:
+            find corresponding non-zero element in Matrix B
+            compute partial product
+            store the result in Matrix C
+        </pre>
+        <p>The challenge lies in efficiently distributing the workload and managing memory access, which is non-contiguous due to the sparse nature of the matrices.</p>
+        <p>Sparse matrix multiplication can greatly benefit from parallelism due to the ability to independently calculate different portions of the resultant matrix. Each element in the resulting matrix is essentially the dot product of a row from the first matrix with a column from the second matrix. This allows for significant decomposition of the problem, where each row-column product can be computed independently.</p>
+        <p>On a GPU, thousands of threads can simultaneously perform these independent computations, making the process highly parallelizable and providing a substantial speedup compared to sequential processing. Similarly, multi-core CPUs can execute multiple threads, each handling different rows or sections of the matrices. The sparsity of the matrices also makes parallelism attractive as we can avoid unnecessary computations involving zero values, reducing both computation time and energy consumption.</p>
+        <p>However, the primary difficulty lies in irregular memory access patterns and load balancing. Since not all rows have the same number of non-zero elements, some threads may complete their tasks faster than others, leading to potential inefficiencies. Moreover, ensuring efficient memory access is challenging because the non-zero elements are scattered, which can result in poor memory locality and degraded performance. By exploring both GPU and CPU implementations, we aim to understand how each platform can be leveraged to address these challenges and achieve optimal performance.</p>
+    </section>
+
+    <section id="challenge">
+        <h2>The Challenge</h2>
+        <p>The main challenges in our project arise from the inherent irregularities in sparse matrix multiplication, which create difficulties in parallelization. The unpredictable distribution of non-zero elements across rows and columns introduces complications in load balancing, memory access, and coordination between threads. We hope to learn how to best manage these challenges by implementing different parallelization strategies on GPU and multi-core CPU platforms.</p>
+        <p><strong>Workload Description:</strong> The workload involves iterating through the non-zero elements of both matrices and computing partial products to form the final matrix. The dependencies are mostly local within rows or columns, which makes parallel execution feasible, but the irregular memory access patterns can lead to poor cache performance and high latency. The workload has sparse data, which means that ensuring locality in memory access is challenging. Additionally, there is a low but significant communication-to-computation ratio, especially when coordinating between threads to aggregate partial results, which can introduce overhead. Divergent execution is also a concern, as the density of non-zero values can vary significantly across rows, causing some threads to finish much earlier than others and resulting in imbalance.</p>
+        <p><strong>System Constraints:</strong> The key constraint is managing efficient mapping of the workload onto GPU and CPU architectures. On a GPU, the divergent execution and irregular memory access lead to challenges in maintaining high throughput, as some threads may be underutilized. On multi-core CPUs, the primary concern is efficiently partitioning the workload across cores without incurring excessive overhead from thread coordination. Both platforms face issues related to non-contiguous memory access, which reduces the effectiveness of caching and can lead to performance bottlenecks. To address these challenges, we aim to experiment with different scheduling and load-balancing techniques to achieve optimal utilization of hardware resources on both platforms.</p>
+    </section>
+
+    <section id="resources">
+        <h2>Resources</h2>
+        <p>We will use the GHC cluster and the PSC supercomputer for running our experiments. The GHC cluster provides convenient access to multiple nodes with both GPU and CPU resources, while the PSC supercomputer will enable us to scale up our experiments to handle larger computations effectively.</p>
+        <p>For starter code, we will consider leveraging existing libraries such as cuSPARSE, which provides GPU-accelerated sparse matrix operations, and Intel MKL, which has efficient multi-core CPU implementations. We may also use the Eigen C++ library as a baseline to adapt or optimize for our purposes.</p>
+        <p>In terms of references, we will consult relevant research papers to guide our approach, such as "Efficient Sparse Matrix-Matrix Multiplication on GPUs" by Dalton et al., and "An Evaluation of Sparse Matrix Multiplication on Modern Architectures" for insights into multi-core CPU and GPU performance characteristics.</p>
+        <p>We may also require access to additional nodes or special GPU hardware for scalability testing. Profiling tools like NVIDIA Nsight Systems or VTune Profiler will also be utilized to analyze performance and optimize our implementation.</p>
+    </section>
+
+    <section id="goals">
+        <h2>Goals and Deliverables</h2>
+        <p><strong>Plan to Achieve (Minimum Goals for a Successful Project):</strong></p>
+        <ul>
+            <li>Functional Implementation on GPU and CPU: Develop a fully functional implementation of sparse matrix multiplication on both GPU (using CUDA) and multi-core CPU (using OpenMP). Ensure that the code can handle matrices of different sizes and sparsity patterns efficiently without errors or major bottlenecks.</li>
+            <li>Basic Performance Analysis: Perform a detailed analysis comparing the performance of GPU and CPU implementations. Provide speedup graphs to illustrate differences in performance for various matrix sizes and sparsity levels.</li>
+            <li>Optimization for Load Balancing: Implement basic optimization strategies for workload distribution to mitigate issues with divergent execution and imbalance. Profile memory access to determine the effectiveness of parallelization, and adjust strategies to minimize latency.</li>
+            <li>Poster Session Demonstration: Create an interactive demo that shows the execution of the sparse matrix multiplication on both GPU and CPU, along with visualizations of the speedup achieved. Prepare graphical outputs (e.g., speedup graphs, computation breakdown) to show efficiency gains and differences between platforms.</li>
+        </ul>
+        <p><strong>Hope to Achieve (Extra Goals for an Exceptional Outcome):</strong></p>
+        <ul>
+            <li>Advanced Optimization Techniques: Implement advanced techniques like tiling and efficient data structures to improve memory locality and reduce latency. Additionally, use prefetching to hide latency caused by irregular memory access patterns.</li>
+            <li>Scalability Testing on PSC Supercomputer: Test the implementation on larger datasets using the PSC supercomputer to assess scalability. Download/develop natural language text datasets to use for stress testing our implementations, as well as comparing performance across real-world scenarios such as sparse-sparse multiplications vs sparse-dense multiplications. Analyze the impact of additional cores or nodes on overall performance and provide a detailed report.</li>
+            <li>Energy Consumption Analysis: Measure the energy consumption of GPU vs. CPU implementations to determine the efficiency in terms of energy-to-computation ratio.</li>
+        </ul>
+        <p><strong>Fallback Goals (In Case Work Progresses More Slowly):</strong></p>
+        <ul>
+            <li>Functional CPU Implementation Only: If the GPU implementation faces major roadblocks, focus on achieving an efficient multi-core CPU implementation using OpenMP.</li>
+            <li>Basic Performance Comparison: Instead of detailed optimizations, perform a more limited performance comparison focusing on baseline speedup without advanced strategies.</li>
+        </ul>
+        <p><strong>Poster Session Deliverables:</strong></p>
+        <ul>
+            <li>An interactive demo showing the sparse matrix multiplication in action on both platforms, with visual performance metrics.</li>
+            <li>Speedup graphs comparing GPU and CPU for various matrix sizes.</li>
+            <li>Profiling data highlighting memory access characteristics and workload distribution.</li>
+            <li>A clear summary of lessons learned, especially with respect to different parallel platforms and their trade-offs.</li>
+        </ul>
+    </section>
+
+    <section id="platform">
+        <h2>Platform Choice</h2>
+        <p>We have chosen C++ as our primary programming language for this project. C++ offers fine-grained control over hardware resources and memory, which is crucial for optimizing sparse matrix operations. Its support for parallel programming frameworks, like OpenMP for CPU multi-threading and CUDA for GPU programming, makes it a natural fit for our parallel implementations.</p>
+        <p><strong>GPU (CUDA):</strong> NVIDIA GPUs are well-suited for highly parallel computations, and CUDA provides a straightforward way to leverage these GPUs for our workload. Sparse matrix multiplication can be efficiently parallelized across thousands of GPU cores, which significantly speeds up computation.</p>
+        <p><strong>Multi-Core CPU (OpenMP):</strong> Multi-core CPUs are versatile and capable of handling general-purpose workloads, including parallel sparse matrix operations. Using OpenMP, we can effectively distribute computations across CPU cores, taking advantage of their cache and memory hierarchy to improve performance.</p>
+        <p><strong>Platform Suitability for Workload:</strong> The workload involves many independent operations (processing non-zero elements across different rows and columns). This characteristic is ideal for both GPU and multi-core CPU platforms, which excel in parallelizing independent tasks. C++ allows us to implement efficient data structures, manage memory manually, and apply prefetching techniques to mitigate irregular memory access patterns, which are common in sparse matrix operations.</p>
+    </section>
+    </section>
+
+    <section id="schedule">
+        <h2>Schedule</h2>
+        <p><strong>Week 1: November 12 - November 18</strong></p>
+        <ul>
+            <li>Set up the development environment, including CUDA for GPU and OpenMP for CPU.</li>
+            <li>Gather and review starter code for sparse matrix multiplication, such as cuSPARSE and OpenMP examples.</li>
+            <li>Familiarize ourselves with profiling tools (e.g., NVIDIA Nsight and VTune Profiler).</li>
+            <li>Start with the CPU implementation using OpenMP to understand the basics of workload partitioning.</li>
+        </ul>
+        <p><strong>Week 2: November 19 - November 25</strong></p>
+        <ul>
+            <li>Implement a basic version of sparse matrix multiplication on the GPU using CUDA.</li>
+            <li>Complete a functional version of the CPU implementation with OpenMP.</li>
+            <li>Begin integrating profiling tools to identify basic performance bottlenecks.</li>
+            <li>Start drafting the Intermediate Milestone Report.</li>
+        </ul>
+        <p><strong>Week 3: November 26 - December 1</strong></p>
+        <ul>
+            <li><strong>November 27:</strong> Submit <strong>Intermediate Milestone Report</strong>.</li>
+            <li>Conduct initial performance analysis of GPU vs CPU implementations with a set of small to moderate-sized sparse matrices.</li>
+            <li>Profile memory access patterns and identify performance bottlenecks related to load balancing and memory divergence.</li>
+        </ul>
+        <p><strong>Week 4: December 2 - December 8</strong></p>
+        <ul>
+            <li>Implement optimizations for GPU and CPU versions:</li>
+            <ul>
+                <li>Use prefetching to mitigate latency caused by irregular memory access.</li>
+                <li>Introduce tiling and other data structure optimizations to improve locality and reduce cache misses.</li>
+            </ul>
+            <li>Test and evaluate different load-balancing strategies to ensure consistent performance across different sparsity patterns.</li>
+        </ul>
+        <p><strong>Week 5: December 9 - December 15</strong></p>
+        <ul>
+            <li>Perform scalability tests on the PSC supercomputer to evaluate performance on larger datasets.</li>
+            <li>Carry out an energy consumption analysis of both CPU and GPU implementations to compare energy efficiency.</li>
+            <li>Create detailed speedup graphs and profiling visualizations.</li>
+            <li>Finalize the interactive demo and gather all deliverables for the poster session.</li>
+            <li><strong>December 15:</strong> Submit <strong>Final Project Report</strong>.</li>
+        </ul>
+    </section>
+</body>
+</html>

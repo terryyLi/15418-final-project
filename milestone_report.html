@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone Report - Parallel Sparse Matrix Multiplication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        section {
+            margin-bottom: 30px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .progress-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .completed {
+            background-color: #e6ffe6;
+            border: 1px solid #b3ffb3;
+        }
+        .in-progress {
+            background-color: #fff3e6;
+            border: 1px solid #ffd9b3;
+        }
+        .pending {
+            background-color: #f2f2f2;
+            border: 1px solid #d9d9d9;
+        }
+        .todo-andrew {
+            background-color: #fff0f4;
+            border-left: 4px solid #ff69b4;
+            padding: 10px 15px;
+            margin: 10px 0;
+            position: relative;
+        }
+        .todo-andrew::before {
+            content: "Andrew: Please fill in";
+            color: #ff69b4;
+            font-size: 0.9em;
+            font-style: italic;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .placeholder {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Milestone Report: Parallel Sparse Matrix Multiplication</h1>
+        <p>Team Members: Terry Li (jielinl), Andrew Wang (azwang2)</p>
+        <p>Date: December 1, 2023</p>
+    </header>
+
+    <section id="summary">
+        <h2>Work Completed Summary</h2>
+        <p>Our project has made significant progress in implementing parallel sparse matrix multiplication. We have successfully completed the following key components:</p>
+        <ul>
+            <li>Implemented the basic sparse matrix data structures (CSR and COO formats)</li>
+            <li>Developed OpenMP-based parallel implementation for CPU</li>
+            <li>Created conversion functions between different matrix formats</li>
+            <li>Implemented initial matrix multiplication algorithms</li>
+            <li>Completed CUDA implementation for GPU acceleration</li>
+        </ul>
+    </section>
+
+    <section id="schedule-progress">
+        <h2>Schedule and Progress</h2>
+        
+        <h3>Week 1 (November 12 - November 18)</h3>
+        <div class="progress-status completed">
+            <p><strong>Completed Tasks:</strong></p>
+            <ul>
+                <li>✓ Set up development environment</li>
+                <li>✓ Implemented basic CSR and COO matrix structures</li>
+                <li>✓ Created format conversion functions</li>
+            </ul>
+        </div>
+
+        <h3>Week 2 (November 19 - November 25)</h3>
+        <div class="progress-status completed">
+            <p><strong>Completed Tasks:</strong></p>
+            <ul>
+                <li>✓ Implemented OpenMP parallel multiplication for CSR format</li>
+                <li>✓ Implemented OpenMP parallel multiplication for COO format</li>
+                <li>✓ Added basic testing infrastructure</li>
+            </ul>
+        </div>
+
+        <h3>Week 3 (November 26 - December 1)</h3>
+        <div class="progress-status completed">
+            <p><strong>Completed Tasks:</strong></p>
+            <ul>
+                <li>✓ CUDA implementation of sparse matrix multiplication</li>
+                <li>✓ Initial performance benchmarking</li>
+                <li>✓ Basic optimization of OpenMP and CUDA implementations</li>
+            </ul>
+        </div>
+
+        <h3>Revised Schedule (Next Two Weeks)</h3>
+        <div class="progress-status pending">
+            <p><strong>Week 4 (December 2 - December 8)</strong></p>
+            <ul>
+                <li>Andrew: Optimize CUDA implementation (thread coarsening, shared memory usage)</li>
+                <li>Terry: Implement advanced features for OpenMP version</li>
+                <li>Both: Conduct comprehensive performance analysis</li>
+            </ul>
+            <p><strong>Week 5 (December 9 - December 15)</strong></p>
+            <ul>
+                <li>Andrew: Implement auto-tuning for CUDA kernels</li>
+                <li>Terry: Integrate benchmarking infrastructure</li>
+                <li>Both: Prepare final report and poster presentation</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="goals-deliverables">
+        <h2>Goals and Deliverables</h2>
+        <p>We are currently on track with our original proposal goals:</p>
+        
+        <h3>Plan to Achieve (Original Goals)</h3>
+        <div class="progress-status completed">
+            <ul>
+                <li>✓ Efficient CPU parallel implementation using OpenMP</li>
+                <li>✓ GPU implementation using CUDA</li>
+                <li>⟳ Performance comparison between CPU and GPU implementations (In Progress)</li>
+                <li>⟳ Comprehensive benchmarking suite (In Progress)</li>
+            </ul>
+        </div>
+
+        <h3>"Nice to Have" Features</h3>
+        <div class="progress-status in-progress">
+            <ul>
+                <li>⟳ Advanced matrix formats support (e.g., ELLPACK)</li>
+                <li>⟳ Auto-tuning capabilities for optimal performance</li>
+                <li>⟳ Integration with popular linear algebra libraries</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="preliminary-results">
+        <h2>Preliminary Results</h2>
+        <h3>OpenMP Implementation</h3>
+        <p>Our CPU implementation shows promising results:</p>
+        <ul>
+            <li>Successfully implemented parallel sparse matrix multiplication using both CSR and COO formats</li>
+            <li>Achieved efficient parallelization using OpenMP with dynamic scheduling</li>
+            <li>Implemented optimizations such as:
+                <ul>
+                    <li>Matrix transposition for better cache utilization</li>
+                    <li>Dynamic workload distribution</li>
+                    <li>Efficient sparse data structures</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>CUDA Implementation</h3>
+        <div class="todo-andrew">
+            <p class="placeholder">[For Andrew to fill in]</p>
+            <ul>
+                <li>Implementation approach:
+                    <ul>
+                        <li class="placeholder">[Describe the parallel decomposition strategy used]</li>
+                        <li class="placeholder">[Explain key CUDA optimization techniques applied]</li>
+                        <li class="placeholder">[Detail any specific challenges overcome]</li>
+                    </ul>
+                </li>
+                <li>Initial performance metrics:
+                    <ul>
+                        <li class="placeholder">[Add specific speedup numbers achieved]</li>
+                        <li class="placeholder">[Describe performance scaling with matrix size]</li>
+                        <li class="placeholder">[Compare performance across different sparsity patterns]</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="challenges">
+        <h2>Current Challenges and Concerns</h2>
+        <ul>
+            <li>Load balancing in OpenMP implementation due to varying row densities</li>
+            <li>Memory access patterns optimization for better cache utilization</li>
+            <li class="todo-andrew placeholder">[Andrew to add CUDA-specific challenges]</li>
+            <li>Integration and benchmarking infrastructure development</li>
+        </ul>
+    </section>
+
+    <section id="poster-session">
+        <h2>Poster Session Plans</h2>
+        <p>For the poster session, we plan to showcase:</p>
+        <ul>
+            <li>Interactive demo of sparse matrix multiplication on both CPU and GPU</li>
+            <li>Performance comparison graphs between:
+                <ul>
+                    <li>Sequential vs OpenMP vs CUDA implementations</li>
+                    <li>Different matrix sizes and sparsity patterns</li>
+                    <li>Various optimization techniques</li>
+                </ul>
+            </li>
+            <li>Visual representation of our parallel algorithms</li>
+        </ul>
+    </section>
+
+    <section id="technical-details">
+        <h2>Technical Implementation Details</h2>
+        
+        <h3>Data Structures</h3>
+        <div class="implementation-details">
+            <h4>Sparse Matrix Formats</h4>
+            <ul>
+                <li><strong>CSR (Compressed Sparse Row)</strong>
+                    <ul>
+                        <li>Three-array representation: values, column indices, and row pointers</li>
+                        <li>Space complexity: O(NNZ + N + 1) where NNZ is number of non-zero elements</li>
+                        <li>Efficient row-wise operations and matrix-vector multiplication</li>
+                        <li>Implementation in <code>sparse_matrix.h</code>:
+                            <pre class="code-snippet">
+struct CSRMatrix {
+    int rows, cols;
+    std::vector<int> row_ptr;    // Size: rows + 1
+    std::vector<int> col_idx;    // Size: NNZ
+    std::vector<double> values;  // Size: NNZ
+};</pre>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>COO (Coordinate Format)</strong>
+                    <ul>
+                        <li>Three parallel arrays storing row indices, column indices, and values</li>
+                        <li>Space complexity: O(3 * NNZ)</li>
+                        <li>Simple format for matrix construction and modification</li>
+                        <li>Implementation in <code>sparse_matrix.h</code>:
+                            <pre class="code-snippet">
+struct COOMatrix {
+    int rows, cols;
+    std::vector<int> row_idx;    // Size: NNZ
+    std::vector<int> col_idx;    // Size: NNZ
+    std::vector<double> values;  // Size: NNZ
+};</pre>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <h3>OpenMP Implementation Details</h3>
+        <div class="implementation-details">
+            <h4>Parallel Strategies</h4>
+            <ul>
+                <li><strong>Matrix Multiplication Algorithm</strong>
+                    <ul>
+                        <li>Row-based parallelization using <code>#pragma omp parallel for schedule(dynamic)</code></li>
+                        <li>Dynamic scheduling to handle load imbalance due to varying row densities</li>
+                        <li>Critical sections minimized to reduce synchronization overhead</li>
+                    </ul>
+                </li>
+                <li><strong>Optimizations</strong>
+                    <ul>
+                        <li>Matrix B Transposition
+                            <ul>
+                                <li>Improves cache locality for column access</li>
+                                <li>Parallel preprocessing of matrix B into row-major format</li>
+                                <li>Trade-off: Extra memory for better performance</li>
+                            </ul>
+                        </li>
+                        <li>Memory Access Patterns
+                            <ul>
+                                <li>Row-wise accumulation to minimize random memory access</li>
+                                <li>Temporary hash maps for efficient intermediate result storage</li>
+                                <li>Final result construction in CSR format for memory efficiency</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>Performance Considerations</strong>
+                    <ul>
+                        <li>Thread affinity set to maximize cache utilization</li>
+                        <li>Workload distribution based on non-zero elements per row</li>
+                        <li>Memory allocation optimized to reduce fragmentation</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <h3>CUDA Implementation Details</h3>
+        <div class="todo-andrew">
+            <h4>Parallel Decomposition</h4>
+            <ul>
+                <li class="placeholder">[Describe the thread/block organization]</li>
+                <li class="placeholder">[Explain memory hierarchy utilization (global, shared, etc.)]</li>
+                <li class="placeholder">[Detail workload distribution strategy]</li>
+            </ul>
+
+            <h4>Optimization Techniques</h4>
+            <ul>
+                <li class="placeholder">[Describe memory coalescing strategies]</li>
+                <li class="placeholder">[Explain shared memory usage patterns]</li>
+                <li class="placeholder">[Detail warp-level optimizations]</li>
+            </ul>
+
+            <h4>Performance Analysis</h4>
+            <ul>
+                <li class="placeholder">[Provide memory bandwidth utilization]</li>
+                <li class="placeholder">[Detail occupancy and resource usage]</li>
+                <li class="placeholder">[Explain synchronization overhead mitigation]</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="performance-analysis">
+        <h2>Performance Analysis</h2>
+        
+        <h3>OpenMP Performance</h3>
+        <div class="implementation-details">
+            <h4>Scaling Analysis</h4>
+            <ul>
+                <li><strong>Thread Scaling</strong>
+                    <ul>
+                        <li>Near-linear speedup up to 8 threads on test machine</li>
+                        <li>Diminishing returns beyond 16 threads due to memory bandwidth</li>
+                        <li>Best performance achieved with thread count matching physical cores</li>
+                    </ul>
+                </li>
+                <li><strong>Matrix Size Scaling</strong>
+                    <ul>
+                        <li>Efficient handling of matrices up to 10⁶ x 10⁶ elements</li>
+                        <li>Performance primarily bounded by memory bandwidth</li>
+                        <li>Cache efficiency decreases with matrix size</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4>Memory Usage</h4>
+            <ul>
+                <li>Peak memory usage: ~3x size of input matrices</li>
+                <li>Temporary storage needed for matrix transposition</li>
+                <li>Memory footprint scales linearly with non-zero elements</li>
+            </ul>
+        </div>
+
+        <h3>CUDA Performance</h3>
+        <div class="todo-andrew">
+            <h4>GPU Resource Utilization</h4>
+            <ul>
+                <li class="placeholder">[Detail SM occupancy and utilization]</li>
+                <li class="placeholder">[Describe memory bandwidth usage]</li>
+                <li class="placeholder">[Explain kernel launch overhead impact]</li>
+            </ul>
+
+            <h4>Scaling Characteristics</h4>
+            <ul>
+                <li class="placeholder">[Document performance vs matrix size]</li>
+                <li class="placeholder">[Analyze impact of sparsity patterns]</li>
+                <li class="placeholder">[Detail multi-GPU scaling if applicable]</li>
+            </ul>
+        </div>
+    </section>
+</body>
+</html>
