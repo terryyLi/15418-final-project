@@ -6,8 +6,8 @@
 #include <chrono>
 #include <stdexcept>
 #include <unistd.h>
-#include <omp.h>
-#include "sparse_matrix.h"
+#include "../sparse_matrix.h" // Contains OpenMP functions
+#include "cuda_matmul.h"   // Contains CUDA functions
 
 // Load a full matrix from a file
 std::vector<std::vector<double>> loadFullMatrix(const std::string &filePath) {
@@ -72,9 +72,6 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "Using format: " << format << std::endl;
-    std::cout << "Number of threads: " << num_threads << '\n';
-    // Set the number of threads for OpenMP
-    omp_set_num_threads(num_threads);
 
     try {
         // Load full matrices
@@ -88,23 +85,31 @@ int main(int argc, char *argv[]) {
         const auto compute_start = std::chrono::steady_clock::now();
 
         if (format == "csr") {
-            // Convert to CSR and multiply
             CSRMatrix A = convertFullMatrixToCSR(fullMatrixA);
             CSRMatrix B = convertFullMatrixToCSR(fullMatrixB);
-
-            // Validate dimensions
             if (A.cols != B.rows) {
                 throw std::runtime_error("Matrix dimensions mismatch for multiplication: A.cols must equal B.rows.");
             }
+            CSRMatrix C;
+            C.rows = A.rows;
+            C.cols = B.rows;
+            C.row_ptr.resize(C.rows + 1, 0);
+            C.col_idx.resize(A.rows * B.cols);
+            C.values.resize(A.rows * B.cols);
 
-            // Perform matrix multiplication
-            CSRMatrix C = multiplyCSR(A, B);
+
+
+            // Use CUDA to multiply matrices
+            multiplyCSR_CUDA(A, B, C);
+
+            for (int i = 1; i < C.rows; i++){
+                C.row_ptr[i + 1] += C.row_ptr[i];
+            }
 
             const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
                 std::chrono::steady_clock::now() - compute_start).count();
             std::cout << "Computation time (sec): " << std::fixed << std::setprecision(6) << compute_time << std::endl;
 
-            // Output result
             if (!outputFile.empty()) {
                 std::ofstream outFile(outputFile);
                 if (!outFile) {
@@ -121,41 +126,6 @@ int main(int argc, char *argv[]) {
             } else {
                 std::cout << "Resultant Matrix C in CSR Format:\n";
                 printCSR(C);
-            }
-        } else { // format == "coo"
-            // Convert to COO and multiply
-            COOMatrix A = convertFullMatrixToCOO(fullMatrixA);
-            COOMatrix B = convertFullMatrixToCOO(fullMatrixB);
-
-            // Validate dimensions
-            if (A.cols != B.rows) {
-                throw std::runtime_error("Matrix dimensions mismatch for multiplication: A.cols must equal B.rows.");
-            }
-
-            // Perform matrix multiplication
-            COOMatrix C = multiplyCOO(A, B);
-
-            const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::chrono::steady_clock::now() - compute_start).count();
-            std::cout << "Computation time (sec): " << std::fixed << std::setprecision(6) << compute_time << std::endl;
-
-            // Output result
-            if (!outputFile.empty()) {
-                std::ofstream outFile(outputFile);
-                if (!outFile) {
-                    throw std::runtime_error("Unable to open output file: " + outputFile);
-                }
-                outFile << "Row indices:\n";
-                for (int val : C.row_idx) outFile << val << " ";
-                outFile << "\nColumn indices:\n";
-                for (int val : C.col_idx) outFile << val << " ";
-                outFile << "\nValues:\n";
-                for (double val : C.values) outFile << val << " ";
-                outFile << "\n";
-                std::cout << "Result saved to " << outputFile << '\n';
-            } else {
-                std::cout << "Resultant Matrix C in COO Format:\n";
-                printCOO(C);
             }
         }
 
