@@ -97,8 +97,6 @@ int main(int argc, char *argv[]) {
             C.col_idx.resize(A.rows * B.cols);
             C.values.resize(A.rows * B.cols);
 
-
-
             // Use CUDA to multiply matrices
             multiplyCSR_CUDA(A, B, C);
 
@@ -126,6 +124,47 @@ int main(int argc, char *argv[]) {
             } else {
                 std::cout << "Resultant Matrix C in CSR Format:\n";
                 printCSR(C);
+            }
+        }
+        else {
+            // Convert to COO and multiply
+            COOMatrix A = convertFullMatrixToCOO(fullMatrixA);
+            COOMatrix B = convertFullMatrixToCOO(fullMatrixB);
+
+            if (A.cols != B.rows) {
+                throw std::runtime_error("Matrix dimensions mismatch for multiplication: A.cols must equal B.rows.");
+            }
+            COOMatrix C;
+            C.rows = A.rows;
+            C.cols = B.rows;
+            C.row_idx.resize(C.rows + 1, 0);
+            C.col_idx.resize(A.rows * B.cols);
+            C.values.resize(A.rows * B.cols);
+
+            // Use CUDA to multiply matrices
+            multiplyCOO_CUDA(A, B, C);
+
+            const double compute_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+                std::chrono::steady_clock::now() - compute_start).count();
+            std::cout << "Computation time (sec): " << std::fixed << std::setprecision(6) << compute_time << std::endl;
+
+            // Output result
+            if (!outputFile.empty()) {
+                std::ofstream outFile(outputFile);
+                if (!outFile) {
+                    throw std::runtime_error("Unable to open output file: " + outputFile);
+                }
+                outFile << "Row indices:\n";
+                for (int val : C.row_idx) outFile << val << " ";
+                outFile << "\nColumn indices:\n";
+                for (int val : C.col_idx) outFile << val << " ";
+                outFile << "\nValues:\n";
+                for (double val : C.values) outFile << val << " ";
+                outFile << "\n";
+                std::cout << "Result saved to " << outputFile << '\n';
+            } else {
+                std::cout << "Resultant Matrix C in COO Format:\n";
+                printCOO(C);
             }
         }
 

@@ -5,7 +5,8 @@
 #include <string>
 
 
-// Function prototypes for CSR
+// Function prototypes 
 extern "C" void multiplyCSR_CUDA(const CSRMatrix &A, CSRMatrix &B, CSRMatrix &C);
+void multiplyCOO_CUDA(const COOMatrix &A, COOMatrix &B, COOMatrix &C);
 
 #endif // SPARSE_MATRIX_H

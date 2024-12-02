@@ -1,6 +1,6 @@
-Row pointers:
-0 3 5 
+Row indices:
+0 0 0 1 1 
 Column indices:
-0 1 2 0 1 2 
+0 2 1 1 2 
 Values:
-5 14 6 0 21 32 
+5 6 14 21 32 

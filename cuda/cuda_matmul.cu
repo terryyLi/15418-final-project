@@ -61,6 +61,33 @@ __global__ void csrMatMulKernel_naive(int rowsA, int colsB,
     }
 }
 
+__global__ void cooMatMulKernel_naive(int nnzA, int *rowA, int *colA, double *valA,
+                                int nnzB, int *rowB, int *colB, double *valB,
+                                int *rowC, int *colC, double *valC, int *nnzC) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= nnzA) return;
+
+    int row = rowA[idx];
+    int col = colA[idx];
+    double val = valA[idx];
+
+    // Iterate over all non-zero elements in matrix B
+    for (int j = 0; j < nnzB; j++) {
+        if (rowB[j] == col) { // Matching row in B with column in A
+            int resultRow = row;
+            int resultCol = colB[j];
+            double resultVal = val * valB[j];
+
+            // Atomic addition to ensure correctness for parallel writes
+            int resultIdx = atomicAdd(nnzC, 1);
+            rowC[resultIdx] = resultRow;
+            colC[resultIdx] = resultCol;
+            valC[resultIdx] = resultVal;
+        }
+    }
+}
+
+
 
 extern "C" void multiplyCSR_CUDA(const CSRMatrix &A, CSRMatrix &B, CSRMatrix &C) {
 
@@ -119,3 +146,64 @@ extern "C" void multiplyCSR_CUDA(const CSRMatrix &A, CSRMatrix &B, CSRMatrix &C)
     cudaFree(d_C_values);
 }
 
+
+extern "C" void multiplyCOO_CUDA(const COOMatrix &A, const COOMatrix &B, COOMatrix &C) {
+    int *d_rowA, *d_colA, *d_rowB, *d_colB, *d_rowC, *d_colC;
+    double *d_valA, *d_valB, *d_valC;
+    int *d_nnzC;
+
+    int nnzC_host = 0;  // Initial non-zero count for matrix C
+
+    // Allocate device memory for A
+    cudaMalloc(&d_rowA, A.row_idx.size() * sizeof(int));
+    cudaMalloc(&d_colA, A.col_idx.size() * sizeof(int));
+    cudaMalloc(&d_valA, A.values.size() * sizeof(double));
+    cudaMemcpy(d_rowA, A.row_idx.data(), A.row_idx.size() * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_colA, A.col_idx.data(), A.col_idx.size() * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_valA, A.values.data(), A.values.size() * sizeof(double), cudaMemcpyHostToDevice);
+
+    // Allocate device memory for B
+    cudaMalloc(&d_rowB, B.row_idx.size() * sizeof(int));
+    cudaMalloc(&d_colB, B.col_idx.size() * sizeof(int));
+    cudaMalloc(&d_valB, B.values.size() * sizeof(double));
+    cudaMemcpy(d_rowB, B.row_idx.data(), B.row_idx.size() * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_colB, B.col_idx.data(), B.col_idx.size() * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_valB, B.values.data(), B.values.size() * sizeof(double), cudaMemcpyHostToDevice);
+
+    // Allocate device memory for C (result)
+    cudaMalloc(&d_rowC, A.row_idx.size() * B.col_idx.size() * sizeof(int));  // Overestimate
+    cudaMalloc(&d_colC, A.row_idx.size() * B.col_idx.size() * sizeof(int));
+    cudaMalloc(&d_valC, A.row_idx.size() * B.col_idx.size() * sizeof(double));
+    cudaMalloc(&d_nnzC, sizeof(int));
+    cudaMemcpy(d_nnzC, &nnzC_host, sizeof(int), cudaMemcpyHostToDevice);
+
+    // Launch kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (A.row_idx.size() + threadsPerBlock - 1) / threadsPerBlock;
+    cooMatMulKernel_naive <<<blocksPerGrid, threadsPerBlock>>>(
+        A.row_idx.size(), d_rowA, d_colA, d_valA,
+        B.row_idx.size(), d_rowB, d_colB, d_valB,
+        d_rowC, d_colC, d_valC, d_nnzC);
+
+    // Copy back results
+    cudaMemcpy(&nnzC_host, d_nnzC, sizeof(int), cudaMemcpyDeviceToHost);
+    C.row_idx.resize(nnzC_host);
+    C.col_idx.resize(nnzC_host);
+    C.values.resize(nnzC_host);
+
+    cudaMemcpy(C.row_idx.data(), d_rowC, nnzC_host * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(C.col_idx.data(), d_colC, nnzC_host * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(C.values.data(), d_valC, nnzC_host * sizeof(double), cudaMemcpyDeviceToHost);
+
+    // Free device memory
+    cudaFree(d_rowA);
+    cudaFree(d_colA);
+    cudaFree(d_valA);
+    cudaFree(d_rowB);
+    cudaFree(d_colB);
+    cudaFree(d_valB);
+    cudaFree(d_rowC);
+    cudaFree(d_colC);
+    cudaFree(d_valC);
+    cudaFree(d_nnzC);
+}
