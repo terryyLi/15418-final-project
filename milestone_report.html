@@ -82,7 +82,7 @@
 
     <section id="schedule-progress">
         <h2>Schedule and Progress</h2>
-        
+
         <h3>Week 1 (November 12 - November 18)</h3>
         <div class="progress-status completed">
             <p><strong>Completed Tasks:</strong></p>
@@ -119,7 +119,7 @@
             <ul>
                 <li>Andrew: Optimize CUDA implementation (thread coarsening, shared memory usage)</li>
                 <li>Terry: Implement advanced features for OpenMP version</li>
-                <li>Both: Conduct comprehensive performance analysis</li>
+                <li>Both: Conduct comprehensive performance analysis with real world data</li>
             </ul>
             <p><strong>Week 5 (December 9 - December 15)</strong></p>
             <ul>
@@ -133,7 +133,7 @@
     <section id="goals-deliverables">
         <h2>Goals and Deliverables</h2>
         <p>We are currently on track with our original proposal goals:</p>
-        
+
         <h3>Plan to Achieve (Original Goals)</h3>
         <div class="progress-status completed">
             <ul>
@@ -150,6 +150,7 @@
                 <li>⟳ Advanced matrix formats support (e.g., ELLPACK)</li>
                 <li>⟳ Auto-tuning capabilities for optimal performance</li>
                 <li>⟳ Integration with popular linear algebra libraries</li>
+                <li>⟳ Download/develop natural language text datasets to use for stress testing our implementations, as well as comparing performance across real-world scenarios such as sparse-sparse multiplications vs sparse-dense multiplications.</li>
             </ul>
         </div>
     </section>
@@ -171,22 +172,16 @@
         </ul>
 
         <h3>CUDA Implementation</h3>
-        <div class="todo-andrew">
-            <p class="placeholder">[For Andrew to fill in]</p>
+        <p> We have also implemented GPU-based sparse matrix multiplication for CSR and COO formats</p>
             <ul>
                 <li>Implementation approach:
                     <ul>
-                        <li class="placeholder">[Describe the parallel decomposition strategy used]</li>
-                        <li class="placeholder">[Explain key CUDA optimization techniques applied]</li>
-                        <li class="placeholder">[Detail any specific challenges overcome]</li>
+                        <li> Parallelize computation over the rows of the CSR output matrix</li>
+                        <li> Sequential portion is limited to iterating over non-zero elements in the input matrices</li>
+                        <li> For COO, parallelize computation over the non-zero elements of COO input matrix</li>
+                        <li> Sequential portion is limited to iterating over non-zero elements of the other input matrix</li>
                     </ul>
                 </li>
-                <li>Initial performance metrics:
-                    <ul>
-                        <li class="placeholder">[Add specific speedup numbers achieved]</li>
-                        <li class="placeholder">[Describe performance scaling with matrix size]</li>
-                        <li class="placeholder">[Compare performance across different sparsity patterns]</li>
-                    </ul>
                 </li>
             </ul>
         </div>
@@ -197,7 +192,9 @@
         <ul>
             <li>Load balancing in OpenMP implementation due to varying row densities</li>
             <li>Memory access patterns optimization for better cache utilization</li>
-            <li class="todo-andrew placeholder">[Andrew to add CUDA-specific challenges]</li>
+            <li>CUDA implementation cannot dynamically determine the number of nonzero elements currently</li>
+            <li>Parallelizing sequential operation in CUDA implementation</li>
+            <li>Integration of CUDA and OpenMP implementations for cleaner codebase</li>
             <li>Integration and benchmarking infrastructure development</li>
         </ul>
     </section>
@@ -220,7 +217,7 @@
 
     <section id="technical-details">
         <h2>Technical Implementation Details</h2>
-        
+
         <h3>Data Structures</h3>
         <div class="implementation-details">
             <h4>Sparse Matrix Formats</h4>
@@ -300,33 +297,24 @@ struct COOMatrix {
         </div>
 
         <h3>CUDA Implementation Details</h3>
-        <div class="todo-andrew">
             <h4>Parallel Decomposition</h4>
             <ul>
-                <li class="placeholder">[Describe the thread/block organization]</li>
-                <li class="placeholder">[Explain memory hierarchy utilization (global, shared, etc.)]</li>
-                <li class="placeholder">[Detail workload distribution strategy]</li>
+                <li>Each CUDA block is responsible for populating a distinct row of the output matrix</li>
+                <li>In the CSR implementation, each block computes the column indices and values separately</li>
+                <li>However, the row indices need to be incremented as values come in, then cumulatively summed</li>
             </ul>
 
             <h4>Optimization Techniques</h4>
             <ul>
-                <li class="placeholder">[Describe memory coalescing strategies]</li>
-                <li class="placeholder">[Explain shared memory usage patterns]</li>
-                <li class="placeholder">[Detail warp-level optimizations]</li>
+                <li>CSR implementation allows for efficient row-based operations</li>
+                <li>COO implementation parallelizes on the non-zero elements</li>
+                <li>Memory costs are high; tradeoff in favor of higher performance, but may be a problem with larger inputs</li>
             </ul>
-
-            <h4>Performance Analysis</h4>
-            <ul>
-                <li class="placeholder">[Provide memory bandwidth utilization]</li>
-                <li class="placeholder">[Detail occupancy and resource usage]</li>
-                <li class="placeholder">[Explain synchronization overhead mitigation]</li>
-            </ul>
-        </div>
     </section>
 
     <section id="performance-analysis">
         <h2>Performance Analysis</h2>
-        
+
         <h3>OpenMP Performance</h3>
         <div class="implementation-details">
             <h4>Scaling Analysis</h4>
@@ -352,23 +340,6 @@ struct COOMatrix {
                 <li>Peak memory usage: ~3x size of input matrices</li>
                 <li>Temporary storage needed for matrix transposition</li>
                 <li>Memory footprint scales linearly with non-zero elements</li>
-            </ul>
-        </div>
-
-        <h3>CUDA Performance</h3>
-        <div class="todo-andrew">
-            <h4>GPU Resource Utilization</h4>
-            <ul>
-                <li class="placeholder">[Detail SM occupancy and utilization]</li>
-                <li class="placeholder">[Describe memory bandwidth usage]</li>
-                <li class="placeholder">[Explain kernel launch overhead impact]</li>
-            </ul>
-
-            <h4>Scaling Characteristics</h4>
-            <ul>
-                <li class="placeholder">[Document performance vs matrix size]</li>
-                <li class="placeholder">[Analyze impact of sparsity patterns]</li>
-                <li class="placeholder">[Detail multi-GPU scaling if applicable]</li>
             </ul>
         </div>
     </section>
