@@ -1,0 +1,22 @@
+# Output files
+cuda/output.txt
+result.txt
+
+# Input directory
+inputs/
+
+# Build artifacts
+*.o
+objs/
+cuda_matmul
+sparse_matrix
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# IDE and system files
+.vscode/
+.DS_Store
+*~

@@ -227,6 +227,41 @@ COOMatrix multiplyCOO(const COOMatrix &A, const COOMatrix &B) {
     return result;
 }
 
+// Multiply a CSR matrix with a vector
+std::vector<double> multiplyCSRVector(const CSRMatrix &A, const std::vector<double> &vec) {
+    assert(A.cols == vec.size() && "Matrix and vector dimensions must align for multiplication.");
+
+    std::vector<double> result(A.rows, 0.0);
+
+    #pragma omp parallel for
+    for (int i = 0; i < A.rows; ++i) {
+        double sum = 0.0;
+        #pragma omp parallel for reduction(+:sum)
+        for (int j = A.row_ptr[i]; j < A.row_ptr[i + 1]; ++j) {
+            sum += A.values[j] * vec[A.col_idx[j]];
+        }
+        result[i] = sum;
+    }
+
+    return result;
+}
+
+// Multiply a COO matrix with a vector
+std::vector<double> multiplyCOOVector(const COOMatrix &A, const std::vector<double> &vec) {
+    assert(A.cols == vec.size() && "Matrix and vector dimensions must align for multiplication.");
+
+    std::vector<double> result(A.rows, 0.0);
+
+    #pragma omp parallel for
+    for (int i = 0; i < A.values.size(); ++i) {
+        double value = A.values[i] * vec[A.col_idx[i]];
+        #pragma omp atomic
+        result[A.row_idx[i]] += value;
+    }
+
+    return result;
+}
+
 // Print a CSR matrix
 void printCSR(const CSRMatrix &mat) {
     std::cout << "CSR Matrix:" << std::endl;
