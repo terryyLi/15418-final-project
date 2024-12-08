@@ -13,18 +13,31 @@ CSRMatrix convertFullMatrixToCSR(const std::vector<std::vector<double>> &fullMat
     CSRMatrix csr;
     csr.rows = rows;
     csr.cols = cols;
-    csr.row_ptr.push_back(0); // Starting with the first row
+    csr.row_ptr.resize(rows + 1, 0);
 
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            if (fullMatrix[i][j] != 0.0) {
-                csr.values.push_back(fullMatrix[i][j]);
-                csr.col_idx.push_back(j);
+    #pragma omp parallel
+    {
+        std::vector<int> local_col_idx;
+        std::vector<double> local_values;
+
+        #pragma omp for
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                if (fullMatrix[i][j] != 0.0) {
+                    local_values.push_back(fullMatrix[i][j]);
+                    local_col_idx.push_back(j);
+                }
             }
+            csr.row_ptr[i + 1] = local_values.size();
         }
-        csr.row_ptr.push_back(csr.values.size());
+
+        #pragma omp critical
+        {
+            csr.values.insert(csr.values.end(), local_values.begin(), local_values.end());
+            csr.col_idx.insert(csr.col_idx.end(), local_col_idx.begin(), local_col_idx.end());
+        }
     }
-    
+
     return csr;
 }
 
