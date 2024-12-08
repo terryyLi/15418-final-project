@@ -120,7 +120,8 @@ int main(int argc, char *argv[]) {
                 std::cout << "Result saved to " << outputFile << '\n';
             } else {
                 std::cout << "Resultant Matrix C in CSR Format:\n";
-                printCSR(C);
+                // comment out to not print too many output
+                // printCSR(C);
             }
         } else { // format == "coo"
             // Convert to COO and multiply
