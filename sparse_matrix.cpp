@@ -32,6 +32,7 @@ CSRMatrix convertFullMatrixToCSR(const std::vector<std::vector<double>> &fullMat
 double dotProduct(const std::unordered_map<int, double> &rowA, 
                   const std::unordered_map<int, double> &rowB) {
     double result = 0.0;
+    #pragma omp parallel for reduction(+:result)
     for (const auto &entry : rowA) {
         int col = entry.first;
         if (rowB.count(col)) {
