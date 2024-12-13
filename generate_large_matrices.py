@@ -32,8 +32,8 @@ def save_matrix(matrix, filename):
 def main():
     # Parameters
     size = 10000  # Size of the matrices (10000 x 10000)
-    density_A = 0.01  # 1% non-zero elements for matrix A
-    density_B = 0.01  # 1% non-zero elements for matrix B
+    density_A = 0.1  # 1% non-zero elements for matrix A
+    density_B = 0.1  # 1% non-zero elements for matrix B
     
     # Create output directory if it doesn't exist
     output_dir = 'inputs/testinput/large1'
